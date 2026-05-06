@@ -35,14 +35,31 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .period-tab:hover{color:var(--text)}
 .period-tab.active{background:var(--bio);color:#fff}
 .date-nav-wrap{display:flex;align-items:center;gap:6px}
-.date-tabs{display:flex;gap:4px;flex-wrap:wrap;max-width:700px}
-.date-tab{font-size:11px;font-weight:600;padding:5px 11px;border-radius:20px;border:1.5px solid var(--border);background:var(--white);color:var(--text-muted);cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s}
-.date-tab:hover{border-color:var(--bio);color:var(--bio)}
-.date-tab.active{background:var(--bio);color:#fff;border-color:var(--bio)}
 .nav-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--white);color:var(--text-muted);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .nav-btn:hover:not(:disabled){border-color:var(--bio);color:var(--bio)}
 .nav-btn:disabled{opacity:.3;cursor:default}
 .compare-select{font-size:12px;border:1.5px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text-sub);background:var(--white);cursor:pointer;font-family:'Noto Sans KR',sans-serif}
+.cal-wrap{position:relative;display:inline-block}
+.cal-trigger{display:flex;align-items:center;gap:7px;padding:5px 13px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);cursor:pointer;font-size:12px;font-weight:600;color:var(--text-sub);font-family:'Noto Sans KR',sans-serif;box-shadow:var(--shadow-sm);transition:border-color .15s;white-space:nowrap}
+.cal-trigger:hover,.cal-trigger.open{border-color:var(--bio);color:var(--bio)}
+.cal-dropdown{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:500;background:var(--white);border:1.5px solid var(--border);border-radius:12px;box-shadow:var(--shadow);min-width:276px;overflow:hidden}
+.cal-dropdown.open{display:block}
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.cal-month-label{font-size:13px;font-weight:700;color:var(--text)}
+.cal-nav{width:26px;height:26px;border:1px solid var(--border);border-radius:6px;background:var(--white);cursor:pointer;font-size:14px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cal-nav:hover{border-color:var(--bio);color:var(--bio)}
+.cal-nav:disabled{opacity:.25;cursor:default}
+.cal-grid{padding:10px 12px 12px}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:3px}
+.cal-wd{font-size:10px;font-weight:700;color:var(--text-faint);text-align:center;padding:2px 0}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-day{width:100%;aspect-ratio:1;border-radius:6px;border:none;background:transparent;font-size:11px;font-weight:500;color:var(--text-muted);cursor:default;transition:all .15s;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Noto Sans KR',sans-serif;line-height:1}
+.cal-day.has-data{color:var(--text);font-weight:600;cursor:pointer}
+.cal-day.has-data:hover{background:var(--bio-light);color:var(--bio)}
+.cal-day.active{background:var(--bio)!important;color:#fff!important;font-weight:700}
+.cal-day.today{box-shadow:inset 0 0 0 1.5px var(--border2)}
+.cal-dot{width:4px;height:4px;border-radius:50%;background:var(--green);margin-top:2px}
+.cal-day.active .cal-dot{background:rgba(255,255,255,.7)}
 
 /* ALERT */
 .alert-wrap{margin-bottom:16px}
@@ -50,8 +67,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .alert-box.hidden{display:none}
 .alert-icon{font-size:16px;flex-shrink:0;margin-top:1px}
 .alert-content .alert-title{font-size:12px;font-weight:700;color:#92400e;margin-bottom:5px}
-.alert-chips{display:flex;flex-wrap:wrap;gap:5px}
-.alert-chip{font-size:11px;background:#fff;border:1px solid #fcd34d;padding:2px 9px;border-radius:20px;color:#78350f;font-weight:600}
+
 .chip-delta{color:var(--red);margin-left:3px}
 
 /* INFO TOOLTIP */
@@ -234,9 +250,29 @@ tbody td{padding:9px 12px;vertical-align:middle} tbody td.right{text-align:right
     <button class="period-tab" onclick="setPeriod('all',this)">전체 평균</button>
   </div>
   <div class="date-nav-wrap" id="dateNavWrap">
-    <button class="nav-btn" id="prevBtn" onclick="changeDate(-1)">‹</button>
-    <div class="date-tabs" id="dateTabs"></div>
-    <button class="nav-btn" id="nextBtn" onclick="changeDate(1)">›</button>
+    <button class="nav-btn" id="prevBtn" onclick="changeDate(-1)" title="전일">‹</button>
+    <div class="cal-wrap" id="calWrap">
+      <button class="cal-trigger" id="calTrigger" onclick="toggleCal()">
+        <span class="cal-icon">📅</span>
+        <span id="calTriggerLabel">날짜 선택</span>
+        <span style="font-size:10px;opacity:.5">▼</span>
+      </button>
+      <div class="cal-dropdown" id="calDropdown">
+        <div class="cal-header">
+          <button class="cal-nav" id="calPrevMonth" onclick="calChangeMonth(-1)">‹</button>
+          <span class="cal-month-label" id="calMonthLabel"></span>
+          <button class="cal-nav" id="calNextMonth" onclick="calChangeMonth(1)">›</button>
+        </div>
+        <div class="cal-grid">
+          <div class="cal-weekdays">
+            <div class="cal-wd">일</div><div class="cal-wd">월</div><div class="cal-wd">화</div>
+            <div class="cal-wd">수</div><div class="cal-wd">목</div><div class="cal-wd">금</div><div class="cal-wd">토</div>
+          </div>
+          <div class="cal-days" id="calDays"></div>
+        </div>
+      </div>
+    </div>
+    <button class="nav-btn" id="nextBtn" onclick="changeDate(1)" title="다음날">›</button>
   </div>
   <select class="compare-select" id="compareSelect" onchange="render()">
     <option value="prev_day">전일 대비</option>
@@ -245,28 +281,12 @@ tbody td{padding:9px 12px;vertical-align:middle} tbody td.right{text-align:right
   </select>
 </div>
 
-<div class="alert-wrap">
-  <div class="alert-box hidden" id="alertDay">
-    <div class="alert-icon">⚠️</div>
-    <div class="alert-content">
-      <div class="alert-title">콘텐츠 수 급증 감지 (전일 대비 +3개 이상 or +30%↑)</div>
-      <div class="alert-chips" id="alertDayItems"></div>
-    </div>
-  </div>
-  <div class="alert-box hidden" id="alert7d" style="background:#fff0f0;border-color:#fca5a5">
-    <div class="alert-icon">🔴</div>
-    <div class="alert-content">
-      <div class="alert-title" style="color:#7f1d1d">콘텐츠 수 급증 감지 (직전 7일 평균 대비 +50%↑)</div>
-      <div class="alert-chips" id="alert7dItems"></div>
-    </div>
-  </div>
-</div>
+<div class="alert-wrap" id="alertWrap"></div>
 
 <div class="legend">
   <div class="legend-item"><div class="l-dot" style="background:var(--bio)"></div>바이오던스 (우리)</div>
   <div class="legend-item"><div class="l-dot" style="background:var(--med)"></div>메디힐 (주요 경쟁사)</div>
   <div class="legend-item"><div class="l-dot" style="background:#f59e0b"></div>아로셀</div>
-  <div class="legend-item"><div class="l-dot" style="background:#818cf8"></div>웰더마</div>
   <div class="legend-item"><div class="l-dot" style="background:var(--text-faint)"></div>기타</div>
 </div>
 
@@ -275,7 +295,7 @@ tbody td{padding:9px 12px;vertical-align:middle} tbody td.right{text-align:right
 <!-- ▼ 히스토리 트렌드 차트 (신규) -->
 <div class="sec-hd">
   <div class="sec-title">점유율 추이 (히스토리)
-    <span class="info-btn">?<span class="info-popup">All_Raw 시트의 전체 날짜 데이터를 기반으로 바이오던스·메디힐·아로셀·웰더마의 일별 점유율 추이를 표시합니다. 키워드를 선택하면 해당 키워드 단독 추이로 전환됩니다.</span></span>
+    <span class="info-btn">?<span class="info-popup">All_Raw 시트의 전체 날짜 데이터를 기반으로 바이오던스·메디힐·아로셀의 일별 점유율 추이를 표시합니다. 키워드를 선택하면 해당 키워드 단독 추이로 전환됩니다.</span></span>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <div class="trend-tabs">
@@ -349,7 +369,7 @@ tbody td{padding:9px 12px;vertical-align:middle} tbody td.right{text-align:right
 // ═══════════════ CONFIG ═══════════════
 const SHEET_ID = '1BuPAP7_QQEtUQaTMucoDO3cTA6Im6apVtX2HiQiBkI8';
 const SHEET_GID = '1470717201'; // All_Raw 시트
-const BRANDS_ORDER = ['메디힐','웰더마','바이오던스','아로셀','더마픽스','달바','아비브','라네즈','이옴','포들','VT','넘버즈인','아이소이','토리든','러븀','에스트라','마몽드','비건이펙트','가쉬','셀리맥스','메노킨','빈느','하우스오브비','프롬더스킨'];
+const BRANDS_ORDER = ['메디힐','웰더마','바이오던스','아로셀','더마픽스','달바','아비브','라네즈','이옴','포들','넘버즈인','VT','아이소이','토리든','러븀','에스트라','마몽드','비건이펙트','가쉬','셀리맥스','메노킨','하우스오브비','빈느','프롬더스킨'];
 
 const QV = {
   '마스크팩':49800,'콜라겐마스크팩':15970,'콜라겐팩':9270,'팩':5240,'겔마스크팩':4580,
@@ -553,21 +573,96 @@ function getPrevRows() {
 }
 
 // ═══════════════ DATE NAV ═══════════════
+// ═══════════════ CALENDAR ═══════════════
+let calYear = 0, calMonth = 0;
+
 function buildDateNav() {
   const wrap = document.getElementById('dateNavWrap');
-  const tabs = document.getElementById('dateTabs');
   if (cPeriod !== 'daily') { wrap.style.display='none'; return; }
   wrap.style.display='flex';
-  // 최대 10개 탭 표시 (최신 기준)
-  const maxTabs = 10;
-  const start = Math.max(0, DATES.length - maxTabs);
-  tabs.innerHTML = DATES.slice(start).map((d,i)=>{
-    const realIdx = start + i;
-    return `<button class="date-tab ${realIdx===cDateIdx?'active':''}" onclick="goDate(${realIdx})">${d.slice(5)}</button>`;
-  }).join('');
+  const cur = DATES[cDateIdx];
+  document.getElementById('calTriggerLabel').textContent = cur ? cur.slice(5).replace('-','/') : '날짜 선택';
   document.getElementById('prevBtn').disabled = cDateIdx <= 0;
   document.getElementById('nextBtn').disabled = cDateIdx >= DATES.length-1;
+  renderCalGrid();
 }
+
+function toggleCal() {
+  const drop = document.getElementById('calDropdown');
+  const trig = document.getElementById('calTrigger');
+  const isOpen = drop.classList.contains('open');
+  if (!isOpen) {
+    // 현재 선택 날짜 기준 달력으로 초기화
+    const cur = DATES[cDateIdx] || DATES[DATES.length-1];
+    calYear = parseInt(cur.slice(0,4));
+    calMonth = parseInt(cur.slice(5,7));
+    renderCalGrid();
+  }
+  drop.classList.toggle('open', !isOpen);
+  trig.classList.toggle('open', !isOpen);
+}
+
+function closeCal() {
+  document.getElementById('calDropdown').classList.remove('open');
+  document.getElementById('calTrigger').classList.remove('open');
+}
+
+function calChangeMonth(delta) {
+  calMonth += delta;
+  if (calMonth > 12) { calMonth = 1; calYear++; }
+  if (calMonth < 1) { calMonth = 12; calYear--; }
+  renderCalGrid();
+}
+
+function renderCalGrid() {
+  if (!calYear) {
+    const cur = DATES[cDateIdx] || DATES[DATES.length-1] || '2026-01-01';
+    calYear = parseInt(cur.slice(0,4));
+    calMonth = parseInt(cur.slice(5,7));
+  }
+  document.getElementById('calMonthLabel').textContent = `${calYear}년 ${calMonth}월`;
+
+  // 해당 월 달력 구성
+  const firstDay = new Date(calYear, calMonth-1, 1).getDay(); // 0=일
+  const daysInMonth = new Date(calYear, calMonth, 0).getDate();
+  const dateSet = new Set(DATES);
+  const curDate = DATES[cDateIdx] || '';
+
+  let html = '';
+  // 빈 칸 채우기
+  for (let i=0; i<firstDay; i++) html += `<div class="cal-day"></div>`;
+  for (let d=1; d<=daysInMonth; d++) {
+    const dateStr = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const hasData = dateSet.has(dateStr);
+    const isActive = dateStr === curDate;
+    const cls = [hasData?'has-data':'', isActive?'active':''].filter(Boolean).join(' ');
+    const dot = hasData && !isActive ? `<span class="cal-dot"></span>` : '';
+    const onclick = hasData ? `onclick="pickDate('${dateStr}')"` : '';
+    html += `<div class="cal-day ${cls}" ${onclick}>${d}${dot}</div>`;
+  }
+  document.getElementById('calDays').innerHTML = html;
+
+  // 이전/다음 달 버튼 비활성화 판단
+  const minDate = DATES[0] || '';
+  const maxDate = DATES[DATES.length-1] || '';
+  const minY = parseInt(minDate.slice(0,4)), minM = parseInt(minDate.slice(5,7));
+  const maxY = parseInt(maxDate.slice(0,4)), maxM = parseInt(maxDate.slice(5,7));
+  document.getElementById('calPrevMonth').disabled = (calYear < minY) || (calYear===minY && calMonth<=minM);
+  document.getElementById('calNextMonth').disabled = (calYear > maxY) || (calYear===maxY && calMonth>=maxM);
+}
+
+function pickDate(dateStr) {
+  const idx = DATES.indexOf(dateStr);
+  if (idx >= 0) { cDateIdx = idx; }
+  closeCal();
+  render();
+}
+
+// 캘린더 외부 클릭 시 닫기
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('calWrap');
+  if (wrap && !wrap.contains(e.target)) closeCal();
+});
 
 function goDate(i){ cDateIdx=i; render(); }
 function changeDate(d){ const n=cDateIdx+d; if(n>=0&&n<DATES.length){cDateIdx=n;render();} }
@@ -594,22 +689,19 @@ function drawTrendChart() {
   const labels = DATES.map(d => d.slice(5));
 
   if (trendView === 'overall') {
-    // 전체 날짜별 바이오던스/메디힐/아로셀/웰더마 점유율
-    const bioData=[], medData=[], aroData=[], welData=[];
+    const bioData=[], medData=[], aroData=[];
     DATES.forEach(d => {
-      let tAll=0, tBio=0, tMed=0, tAro=0, tWel=0;
+      let tAll=0, tBio=0, tMed=0, tAro=0;
       Object.values(RAW[d]).forEach(brands => {
         const tot = Object.values(brands).reduce((a,b)=>a+b,0);
         tAll += tot;
         tBio += brands['바이오던스']||0;
         tMed += brands['메디힐']||0;
         tAro += brands['아로셀']||0;
-        tWel += brands['웰더마']||0;
       });
       bioData.push(tAll>0 ? parseFloat((tBio/tAll*100).toFixed(1)) : null);
       medData.push(tAll>0 ? parseFloat((tMed/tAll*100).toFixed(1)) : null);
       aroData.push(tAll>0 ? parseFloat((tAro/tAll*100).toFixed(1)) : null);
-      welData.push(tAll>0 ? parseFloat((tWel/tAll*100).toFixed(1)) : null);
     });
 
     trendChart = new Chart(ctx, {
@@ -617,19 +709,19 @@ function drawTrendChart() {
       data: {
         labels,
         datasets: [
-          { label:'바이오던스', data:bioData, borderColor:'#1a56db', backgroundColor:'rgba(26,86,219,.1)', borderWidth:2.5, pointRadius:3, fill:false, tension:.3 },
-          { label:'메디힐', data:medData, borderColor:'#dc2626', backgroundColor:'rgba(220,38,38,.07)', borderWidth:2.5, pointRadius:3, fill:false, tension:.3 },
-          { label:'아로셀', data:aroData, borderColor:'#d97706', backgroundColor:'transparent', borderWidth:1.5, pointRadius:2, fill:false, tension:.3, borderDash:[4,3] },
-          { label:'웰더마', data:welData, borderColor:'#6366f1', backgroundColor:'transparent', borderWidth:1.5, pointRadius:2, fill:false, tension:.3, borderDash:[4,3] },
+          { label:'바이오던스', data:bioData, borderColor:'#1a56db', backgroundColor:'rgba(26,86,219,.08)', borderWidth:2.5, pointRadius:3, pointHoverRadius:5, fill:true, tension:.35 },
+          { label:'메디힐', data:medData, borderColor:'#dc2626', backgroundColor:'rgba(220,38,38,.05)', borderWidth:2.5, pointRadius:3, pointHoverRadius:5, fill:true, tension:.35 },
+          { label:'아로셀', data:aroData, borderColor:'#d97706', backgroundColor:'transparent', borderWidth:1.8, pointRadius:2, pointHoverRadius:4, fill:false, tension:.35, borderDash:[5,3] },
         ]
       },
       options: {
         responsive:true, maintainAspectRatio:false,
+        interaction:{ mode:'index', intersect:false },
         plugins: { legend: { display:false },
-          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%` } }
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y !== null ? ctx.parsed.y+'%' : '-'}` } }
         },
         scales: {
-          x: { grid:{color:'rgba(0,0,0,0.04)'}, ticks:{font:{size:11},color:'#7c85a6', maxTicksLimit:20} },
+          x: { grid:{color:'rgba(0,0,0,0.04)'}, ticks:{font:{size:11},color:'#7c85a6', maxTicksLimit:22} },
           y: { grid:{color:'rgba(0,0,0,0.04)'}, ticks:{font:{size:11},color:'#7c85a6', callback:v=>v+'%'}, beginAtZero:true }
         }
       }
@@ -638,8 +730,8 @@ function drawTrendChart() {
     // 키워드별 주요 브랜드 추이
     const kw = document.getElementById('trendKwSelect').value;
     if (!kw) return;
-    const topBrands = ['바이오던스','메디힐','아로셀','웰더마'];
-    const colors = {'바이오던스':'#1a56db','메디힐':'#dc2626','아로셀':'#d97706','웰더마':'#6366f1'};
+    const topBrands = ['바이오던스','메디힐','아로셀'];
+    const colors = {'바이오던스':'#1a56db','메디힐':'#dc2626','아로셀':'#d97706'};
     const datasets = topBrands.map(b => {
       const data = DATES.map(d => {
         const brands = RAW[d][kw];
@@ -669,14 +761,11 @@ function drawTrendChart() {
     });
   }
 
-  // 커스텀 레전드
-  const legendHtml = (trendView==='overall'
-    ? ['바이오던스','메디힐','아로셀','웰더마']
-    : ['바이오던스','메디힐','아로셀','웰더마']
-  ).map((b,i) => {
-    const clrs = {'바이오던스':'#1a56db','메디힐':'#dc2626','아로셀':'#d97706','웰더마':'#6366f1'};
-    const isDash = b==='아로셀'||b==='웰더마';
-    return `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text-sub)"><span style="display:inline-block;width:16px;height:3px;background:${clrs[b]};border-radius:2px;${isDash?'background:repeating-linear-gradient(to right,'+clrs[b]+' 0,'+clrs[b]+' 4px,transparent 4px,transparent 7px)':''}"></span>${b}</span>`;
+  const legendBrands = ['바이오던스','메디힐','아로셀'];
+  const legendHtml = legendBrands.map(b => {
+    const clrs = {'바이오던스':'#1a56db','메디힐':'#dc2626','아로셀':'#d97706'};
+    const isDash = b==='아로셀';
+    return `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text-sub)"><span style="display:inline-block;width:16px;height:3px;background:${clrs[b]};border-radius:2px;${isDash?'background:repeating-linear-gradient(to right,'+clrs[b]+' 0,'+clrs[b]+' 5px,transparent 5px,transparent 8px)':''}"></span>${b}</span>`;
   }).join('');
   const legendEl = document.createElement('div');
   legendEl.style.cssText = 'display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)';
@@ -690,34 +779,135 @@ function drawTrendChart() {
 
 // ═══════════════ ALERTS ═══════════════
 function renderAlerts(rows, prevRows) {
-  const dayBox = document.getElementById('alertDay');
-  const d7Box = document.getElementById('alert7d');
-  if (!prevRows) { dayBox.classList.add('hidden'); d7Box.classList.add('hidden'); return; }
-  const prevMap = Object.fromEntries(prevRows.map(r=>[r.kw,r]));
-  const dayAlerts = rows.filter(r=>{
-    const p=prevMap[r.kw]; if(!p)return false;
-    const delta=r.total-p.total;
-    return delta>=3 || (p.total>0&&delta/p.total>=0.3);
-  }).sort((a,b)=>(b.total-(prevMap[b.kw]?.total||0))-(a.total-(prevMap[a.kw]?.total||0)));
+  const wrap = document.getElementById('alertWrap');
+  wrap.innerHTML = '';
+  if (!prevRows) return;
 
-  if (dayAlerts.length) {
-    dayBox.classList.remove('hidden');
-    document.getElementById('alertDayItems').innerHTML = dayAlerts.map(r=>{
-      const d=r.total-(prevMap[r.kw]?.total||0);
-      const pct=prevMap[r.kw]?.total>0?Math.round(d/prevMap[r.kw].total*100):0;
-      const medDelta=r.med-(prevMap[r.kw]?.med||0);
-      return `<span class="alert-chip">${r.kw} <span class="chip-delta">+${d}개${pct>0?' ('+pct+'%)':''} · 메디힐 ${medDelta>=0?'+':''}${medDelta}</span></span>`;
-    }).join('');
-  } else dayBox.classList.add('hidden');
+  const prevMap = Object.fromEntries(prevRows.map(r => [r.kw, r]));
+  const cmpL = document.getElementById('compareSelect')?.value === 'prev_7d' ? '직전 7일 평균' : '전일';
 
-  const d7=rows.filter(r=>{const p=prevMap[r.kw];return p&&p.total&&(r.total-p.total)/p.total>=0.5;});
-  if (d7.length && document.getElementById('compareSelect')?.value==='prev_7d') {
-    d7Box.classList.remove('hidden');
-    document.getElementById('alert7dItems').innerHTML = d7.map(r=>{
-      const p=prevMap[r.kw]; const pct=Math.round((r.total-p.total)/p.total*100);
-      return `<span class="alert-chip" style="border-color:#fca5a5">${r.kw} <span class="chip-delta">+${pct}% vs 기준값</span></span>`;
-    }).join('');
-  } else d7Box.classList.add('hidden');
+  // ① 바이오던스 점유율 하락 — 전일 대비 −5%p 이상 & 실제 노출 있는 키워드
+  const bioDrop = rows
+    .filter(r => {
+      const p = prevMap[r.kw];
+      return p && p.bio > 0 && (r.bioPct - p.bioPct) <= -5;
+    })
+    .sort((a, b) => {
+      const da = a.bioPct - (prevMap[a.kw]?.bioPct || 0);
+      const db = b.bioPct - (prevMap[b.kw]?.bioPct || 0);
+      return da - db; // 가장 많이 떨어진 순
+    });
+
+  // ② 메디힐 점유율 급증 — 전일 대비 +5%p 이상 상승
+  const medSurge = rows
+    .filter(r => {
+      const p = prevMap[r.kw];
+      return p && (r.medPct - p.medPct) >= 5;
+    })
+    .sort((a, b) => {
+      const da = b.medPct - (prevMap[b.kw]?.medPct || 0);
+      const db = a.medPct - (prevMap[a.kw]?.medPct || 0);
+      return da - db;
+    });
+
+  // ③ 바이오던스가 메디힐에 역전당한 키워드 (전일엔 우세 or 동등 → 오늘 열세)
+  const reversed = rows.filter(r => {
+    const p = prevMap[r.kw];
+    return p && p.bioPct >= p.medPct && r.bioPct < r.medPct && r.med > 0;
+  });
+
+  // ④ 바이오던스가 메디힐을 역전한 키워드 (좋은 신호)
+  const overtaken = rows.filter(r => {
+    const p = prevMap[r.kw];
+    return p && p.bioPct < p.medPct && r.bioPct >= r.medPct && r.bio > 0;
+  });
+
+  function makeChips(arr, chipFn) {
+    return arr.slice(0, 8).map(chipFn).join('');
+  }
+
+  function box(bg, border, icon, titleColor, title, chipsHtml) {
+    return `<div style="background:${bg};border:1.5px solid ${border};border-radius:var(--r);padding:12px 16px;display:flex;gap:10px;align-items:flex-start;margin-bottom:6px">
+      <div style="font-size:16px;flex-shrink:0;margin-top:1px">${icon}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:${titleColor};margin-bottom:7px">${title}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">${chipsHtml}</div>
+      </div>
+    </div>`;
+  }
+
+  function chip(bg, border, text, sub, subColor) {
+    return `<span style="font-size:11px;background:${bg};border:1px solid ${border};padding:3px 9px;border-radius:20px;color:#1a1a2a;font-weight:600;display:inline-flex;align-items:center;gap:4px">
+      ${text}<span style="color:${subColor};font-weight:700">${sub}</span>
+    </span>`;
+  }
+
+  let hasAlert = false;
+
+  // 역전당한 키워드 (최우선)
+  if (reversed.length) {
+    hasAlert = true;
+    wrap.insertAdjacentHTML('beforeend', box(
+      '#fff0f0', '#fca5a5', '🚨', '#7f1d1d',
+      `메디힐에 역전당한 키워드 (${cmpL} 대비) — 즉시 콘텐츠 보강 필요`,
+      makeChips(reversed, r => {
+        const p = prevMap[r.kw];
+        return chip('#fff', '#fca5a5', r.kw,
+          ` 바이오 ${p.bioPct}%→${r.bioPct}% / 메디힐 ${p.medPct}%→${r.medPct}%`, '#dc2626');
+      })
+    ));
+  }
+
+  // 바이오던스 점유율 하락
+  if (bioDrop.length) {
+    hasAlert = true;
+    wrap.insertAdjacentHTML('beforeend', box(
+      '#fff7ed', '#fed7aa', '⚠️', '#92400e',
+      `바이오던스 점유율 하락 (${cmpL} 대비 −5%p 이상)`,
+      makeChips(bioDrop, r => {
+        const p = prevMap[r.kw];
+        const diff = r.bioPct - p.bioPct;
+        return chip('#fff', '#fcd34d', r.kw,
+          ` ${p.bioPct}%→${r.bioPct}% (${diff}%p)`, '#d97706');
+      })
+    ));
+  }
+
+  // 메디힐 점유율 급증
+  if (medSurge.length) {
+    hasAlert = true;
+    wrap.insertAdjacentHTML('beforeend', box(
+      '#fff0f0', '#fecaca', '📈', '#991b1b',
+      `메디힐 점유율 급증 (${cmpL} 대비 +5%p 이상) — 경쟁사 SEO 집중 가능성`,
+      makeChips(medSurge, r => {
+        const p = prevMap[r.kw];
+        const diff = r.medPct - p.medPct;
+        return chip('#fff', '#fca5a5', r.kw,
+          ` 메디힐 ${p.medPct}%→${r.medPct}% (+${diff}%p)`, '#dc2626');
+      })
+    ));
+  }
+
+  // 바이오던스 역전 성공 (좋은 소식)
+  if (overtaken.length) {
+    hasAlert = true;
+    wrap.insertAdjacentHTML('beforeend', box(
+      '#f0fdf4', '#86efac', '🏆', '#065f46',
+      `바이오던스가 메디힐 역전 성공! (${cmpL} 대비)`,
+      makeChips(overtaken, r => {
+        const p = prevMap[r.kw];
+        return chip('#fff', '#86efac', r.kw,
+          ` 바이오 ${p.bioPct}%→${r.bioPct}% / 메디힐 ${p.medPct}%→${r.medPct}%`, '#059669');
+      })
+    ));
+  }
+
+  // 알림 없을 때
+  if (!hasAlert) {
+    wrap.innerHTML = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:var(--r);padding:10px 16px;font-size:12px;font-weight:600;color:#065f46;display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <span>✅</span> ${cmpL} 대비 점유율 급변 없음 — 안정적인 상태입니다.
+    </div>`;
+  }
 }
 
 // ═══════════════ KPI ═══════════════
